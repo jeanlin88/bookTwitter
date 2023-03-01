@@ -12,6 +12,7 @@ bookRoutes.route("/book").get(function (req, res) {
     labels: req.query.labels?.split(',') || [],
   }
   console.log("get book, search", searches);
+  //TODO: apply searches
   db_connect.collection("book").find({}).toArray().then((books, err) => {
     if (err) throw err;
     res.json({ result: true, books: books });
@@ -31,10 +32,9 @@ bookRoutes.route("/book").post(function (req, res) {
   let newBook = {
     title: req.body.title,
     authors: [...req.body.authors],
-    reviews: [],
     coverImage: req.body.coverImage,
     description: req.body.description
-  }
+  };
   db_connect.collection("book").insertOne(newBook, function (err, result) {
     if (err) throw err;
     res.json({ result: true, bookId: result.insertedId });
