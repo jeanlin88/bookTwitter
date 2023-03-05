@@ -18,6 +18,7 @@ app.use(function (req, res, next) {
 });
 
 app.use(require("./routes/book"));
+app.use(require("./routes/user"));
 // get driver connection
 const dbo = require("./db/conn");
 
