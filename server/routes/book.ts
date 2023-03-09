@@ -1,7 +1,7 @@
 import express from "express";
 import { Db, ObjectId } from "mongodb";
 import { getDb } from "../db/conn";
-import { Book } from "../document/book";
+import { Book } from "../model/book";
 
 export const bookRoutes = express.Router();
 

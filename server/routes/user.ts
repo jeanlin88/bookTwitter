@@ -1,7 +1,7 @@
 import express from "express";
 import { ObjectId } from "mongodb";
 import { getDb } from "../db/conn";
-import { User } from "../document/user";
+import { User } from "../model/user";
 
 export const userRoutes = express.Router()
 
