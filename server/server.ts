@@ -19,11 +19,12 @@ app.use(function (req, res, next) {
 //routes
 app.use(bookRoutes);
 app.use(userRoutes);
+//API swagger documentation
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+//default 404 response
 app.use(function (req, res) {
     res.status(404).json({ result: false });
 })
-//API swagger documentation
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 //listen
 app.listen(process.env.PORT || 5000, () => {
     // perform a database connection when server starts
