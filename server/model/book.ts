@@ -13,3 +13,10 @@ export interface Book {
     reviews: BookReview[]
     title: string
 };
+
+export interface Booklist {
+    books: string[]
+    description: string
+    name: string
+    public: boolean
+};
