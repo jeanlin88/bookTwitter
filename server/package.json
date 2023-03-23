@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/express-serve-static-core": "^4.17.33",
     "@types/node": "^18.14.6",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
