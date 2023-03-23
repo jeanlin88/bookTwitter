@@ -5,13 +5,16 @@ export interface BookReview {
     username: string
 };
 
-export interface Book {
+export interface BookRequest {
     authors: string[]
     coverImage: string
     description: string
-    labels: string
-    reviews: BookReview[]
+    labels: string[]
     title: string
+};
+
+export interface Book extends BookRequest{
+    reviews?: BookReview[]
 };
 
 export interface Booklist {
