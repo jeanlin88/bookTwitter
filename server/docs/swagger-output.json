@@ -11,7 +11,21 @@
     "http"
   ],
   "paths": {
-    "/book": {
+    "/api/v1/book/all/fields": {
+      "get": {
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/v1/book/": {
       "get": {
         "description": "",
         "parameters": [
@@ -87,7 +101,7 @@
         }
       }
     },
-    "/book/{bookId}": {
+    "/api/v1/book/{bookId}": {
       "get": {
         "description": "",
         "parameters": [
@@ -127,7 +141,7 @@
         }
       }
     },
-    "/user/{username}": {
+    "/api/v1/user/{username}": {
       "get": {
         "description": "",
         "parameters": [
