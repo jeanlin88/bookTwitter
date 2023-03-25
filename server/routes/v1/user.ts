@@ -1,11 +1,11 @@
 import express from "express";
 import { ObjectId } from "mongodb";
-import { getDb } from "../db/conn";
-import { User } from "../model/user";
+import { getDb } from "../../db/conn";
+import { User } from "../../model/user";
 
 export const userRoutes = express.Router();
 
-userRoutes.route("/user/:username").get(function (req, res) {
+userRoutes.route("/:username").get(function (req, res) {
   //TODO: add regex check for username
   let query = { username: req.params.username };
   getDb().collection<User>("user").findOne(query).then((user) => {
