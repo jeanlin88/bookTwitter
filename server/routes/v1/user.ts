@@ -6,6 +6,8 @@ import { User } from "../../model/user";
 export const userRoutes = express.Router();
 
 userRoutes.route("/:username").get(function (req, res) {
+  /* 	#swagger.tags = ['User']
+      #swagger.description = 'Endpoint to get user info by its username' */
   //TODO: add regex check for username
   let query = { username: req.params.username };
   getDb().collection<User>("user").findOne(query).then((user) => {

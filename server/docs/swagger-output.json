@@ -1,19 +1,32 @@
 {
   "swagger": "2.0",
   "info": {
+    "version": "0.1.0",
     "title": "Book Twitter API",
-    "description": "API document for Book Twitter",
-    "version": "1.0.0"
+    "description": "API document for Book Twitter"
   },
   "host": "localhost:5000",
   "basePath": "/",
+  "tags": [
+    {
+      "name": "Book",
+      "description": "Book API Endpoints"
+    },
+    {
+      "name": "User",
+      "description": "User API Endpoints"
+    }
+  ],
   "schemes": [
     "http"
   ],
   "paths": {
     "/api/v1/book/all/fields": {
       "get": {
-        "description": "",
+        "tags": [
+          "Book"
+        ],
+        "description": "Endpoint to get available fields of book",
         "parameters": [],
         "responses": {
           "200": {
@@ -27,7 +40,10 @@
     },
     "/api/v1/book/": {
       "get": {
-        "description": "",
+        "tags": [
+          "Book"
+        ],
+        "description": "Endpoint to search books",
         "parameters": [
           {
             "name": "author",
@@ -58,7 +74,10 @@
         }
       },
       "post": {
-        "description": "",
+        "tags": [
+          "Book"
+        ],
+        "description": "Endpoint to insert a book into database",
         "parameters": [
           {
             "name": "body",
@@ -103,7 +122,10 @@
     },
     "/api/v1/book/{bookId}": {
       "get": {
-        "description": "",
+        "tags": [
+          "Book"
+        ],
+        "description": "Endpoint to get specific book by its id",
         "parameters": [
           {
             "name": "bookId",
@@ -122,7 +144,10 @@
         }
       },
       "delete": {
-        "description": "",
+        "tags": [
+          "Book"
+        ],
+        "description": "Endpoint to delete a book from database by its id",
         "parameters": [
           {
             "name": "bookId",
@@ -143,7 +168,10 @@
     },
     "/api/v1/user/{username}": {
       "get": {
-        "description": "",
+        "tags": [
+          "User"
+        ],
+        "description": "Endpoint to get user info by its username",
         "parameters": [
           {
             "name": "username",

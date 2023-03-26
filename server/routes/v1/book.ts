@@ -11,6 +11,8 @@ export const bookRoutes = express.Router();
 
 //https://www.npmjs.com/package/swagger-autogen?ref=pkgstats.com#schema-and-definitions
 bookRoutes.route("/all/fields").get(function (req, res: BookFieldResponse | BaseResponse) {
+  /* 	#swagger.tags = ['Book']
+      #swagger.description = 'Endpoint to get available fields of book' */
   const aggs = [
     {
       $group: {
@@ -49,6 +51,8 @@ bookRoutes.route("/all/fields").get(function (req, res: BookFieldResponse | Base
 })
 
 bookRoutes.route("/").get(function (req: TypedRequestQuery<Search>, res) {
+  /* 	#swagger.tags = ['Book']
+      #swagger.description = 'Endpoint to search books' */
   let query: Filter<Book> = {};
   if (req.query.author) {
     query.authors = { $elemMatch: { $regex: `.*${req.query.author}.*`, $options: 'i' } };
@@ -83,6 +87,8 @@ bookRoutes.route("/").get(function (req: TypedRequestQuery<Search>, res) {
 });
 
 bookRoutes.route("/:bookId").get(function (req, res) {
+  /* 	#swagger.tags = ['Book']
+      #swagger.description = 'Endpoint to get specific book by its id' */
   let query: Filter<Book> = { _id: new ObjectId(req.params.bookId) };
   getDb().collection<Book>("book").findOne(query).then(function (book) {
     return res.json({ result: true, book: book });
@@ -93,6 +99,8 @@ bookRoutes.route("/:bookId").get(function (req, res) {
 });
 
 bookRoutes.route("/").post(function (req: express.Request<BookRequest>, res) {
+  /* 	#swagger.tags = ['Book']
+      #swagger.description = 'Endpoint to insert a book into database' */
   if (
     isArrayOfString(req.body.authors)
     && typeof req.body.coverImage === 'string'
@@ -125,6 +133,8 @@ bookRoutes.route("/").post(function (req: express.Request<BookRequest>, res) {
 });
 
 bookRoutes.route("/:bookId").delete(function (req, res) {
+  /* 	#swagger.tags = ['Book']
+      #swagger.description = 'Endpoint to delete a book from database by its id' */
   let query: Filter<Book> = { _id: new ObjectId(req.params.bookId) };
   getDb().collection<Book>("book").deleteOne(query).then(function () {
     return res.status(204);
