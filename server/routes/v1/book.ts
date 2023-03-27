@@ -1,15 +1,15 @@
-import express, { Response } from "express";
-import { ObjectId, Filter } from "mongodb";
+import express from "express";
+import { ObjectId, Filter, UpdateFilter } from "mongodb";
 import { getDb } from "../../db/conn";
 import { isArrayOfString } from "../../helper";
-import { Book, BookField, BookRequest } from "../../model/book";
+import { Book, BookField, BookRequest, BookReview } from "../../model/book";
 import { TypedRequestQuery } from "../../model/request";
 import { BaseResponse, BookFieldResponse } from "../../model/response";
 import { Search } from "../../model/search";
+import { User } from "../../model/user";
 
 export const bookRoutes = express.Router();
 
-//https://www.npmjs.com/package/swagger-autogen?ref=pkgstats.com#schema-and-definitions
 bookRoutes.route("/all/fields").get(function (req, res: BookFieldResponse | BaseResponse) {
   /* 	#swagger.tags = ['Book']
       #swagger.description = 'Endpoint to get available fields of book' */
@@ -143,3 +143,54 @@ bookRoutes.route("/:bookId").delete(function (req, res) {
     return res.status(500).json({ result: false });
   });;
 });
+
+bookRoutes.route("/:bookId/review").post(async function (req, res) {
+  /* 	#swagger.tags = ['Book', 'Review']
+      #swagger.description = 'Endpoint to delete a book from database by its id' */
+  let username;
+  if (typeof req.body.userId === 'string') {
+    let query: Filter<User> = { _id: new ObjectId(req.body.userId) };
+    getDb().collection<User>("user").findOne(query).then(function (user) {
+      username = user?.username;
+    });
+  }
+  if (
+    typeof req.body.rank === 'number'
+    && req.body.rank > 0
+    && req.body.rank <= 5
+    && typeof req.body.content === 'string'
+    && username
+    && await hasComment(req.body.bookId, username)
+  ) {
+    const newBookReview: BookReview = {
+      content: req.body.content,
+      createTime: new Date(),
+      rank: req.body.rank,
+      username: username
+    };
+    console.debug(newBookReview);
+    let bookQuery: Filter<Book> = { _id: new ObjectId(req.body.bookId) };
+    let bookUpdate: UpdateFilter<Book> = { $push: { reviews: newBookReview}};
+    getDb().collection<Book>("book").findOneAndUpdate(bookQuery, bookUpdate).then(result => {
+      return result
+        ? res.status(204)
+        : res.status(500).json({ result: false });
+    }).catch((error) => {
+      console.error(error);
+      return res.status(500).json({ result: false });
+    });
+  }
+  else {
+    return res.status(400).json({ result: false });
+  }
+})
+
+async function hasComment(bookId: string, username: string) {
+  let query: Filter<Book> = {
+    _id: new ObjectId(bookId),
+    reviews: { username: username }
+  };
+  return getDb().collection<Book>("book").findOne(query).then(function (book) {
+    return book !== null;
+  })
+}
