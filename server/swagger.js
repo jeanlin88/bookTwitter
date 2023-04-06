@@ -14,6 +14,10 @@ const doc = {
             "description": "Book API Endpoints"
         },
         {
+            "name": "Booklist",
+            "description": "Booklist API Endpoints"
+        },
+        {
             "name": "User",
             "description": "User API Endpoints"
         }
