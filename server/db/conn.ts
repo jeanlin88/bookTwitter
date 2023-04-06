@@ -14,6 +14,4 @@ export function connectToServer(callback: Function) {
     }).catch(error => callback(error));
 };
 
-export function getDb() {
-    return _db;
-};
+export function getDb() { return _db; };

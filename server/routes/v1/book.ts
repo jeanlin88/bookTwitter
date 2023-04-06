@@ -1,22 +1,95 @@
 import express from "express";
-import { ObjectId, Filter, UpdateFilter } from "mongodb";
+import { Filter, ObjectId, UpdateFilter, WithId } from "mongodb";
+import { v4 as uuidv4 } from "uuid";
 import { getDb } from "../../db/conn";
-import { isArrayOfString } from "../../helper";
-import { Book, BookField, BookRequest, BookReview } from "../../model/book";
-import { TypedRequestQuery } from "../../model/request";
-import { BaseResponse, BookFieldResponse } from "../../model/response";
-import { Search } from "../../model/search";
-import { User } from "../../model/user";
+import { hasBookReview, isArrayOfString } from "../../helper";
+import { Book, BookField, BookSearch } from "../../model/book";
+import { TypedRequestBody, TypedRequestQuery } from "../../model/request";
+import { BookFieldResponse, BookResponse, errResBody, InsertedResponse } from "../../model/response";
+import { Review } from "../../model/review";
 
 export const bookRoutes = express.Router();
 
-bookRoutes.route("/all/fields").get(function (req, res: BookFieldResponse | BaseResponse) {
+bookRoutes.route("/").get((req: TypedRequestQuery<BookSearch>, res) => {
+  /* 	#swagger.tags = ['Book']
+      #swagger.description = 'Endpoint to search books' */
+  let query: Filter<Book> = {};
+  if (req.query.author) {
+    query.authors = { $elemMatch: { $regex: `.*${req.query.author}.*`, $options: 'i' } };
+  }
+  if (Array.isArray(req.query.keywords)) {
+    req.query.keywords.forEach(keyword => {
+      query.$and = [
+        ...query.$and ? query.$and : [],
+        {
+          $or: [
+            { title: { $regex: `.*${keyword}.*`, $options: 'i' } },
+            { description: { $regex: `.*${keyword}.*`, $options: 'i' } }
+          ]
+        }
+      ];
+    })
+  } else if (req.query.keywords) {
+    return res.status(400).json(errResBody);
+  }
+  if (Array.isArray(req.query.labels)) {
+    query.labels = { $all: req.query.labels };
+  } else if (req.query.labels) {
+    return res.status(400).json(errResBody);
+  }
+  console.debug("query:", JSON.stringify(query));
+  getDb().collection<Book>("book").find(query).toArray().then((books) => {
+    const resBody: BookResponse = { result: true, size: books.length, books };
+    return res.json(resBody);
+  }).catch(error => {
+    console.error(error);
+    return res.status(500).json(errResBody);
+  });
+});
+
+bookRoutes.route("/").post((req: TypedRequestBody<Book>, res) => {
+  /* 	#swagger.tags = ['Book']
+      #swagger.description = 'Endpoint to create a book' */
+  if (
+    isArrayOfString(req.body.authors)
+    && typeof req.body.coverImage === 'string'
+    && typeof req.body.description === 'string'
+    && isArrayOfString(req.body.labels)
+    && typeof req.body.title === 'string'
+  ) {
+    const newBook: WithId<Book> = {
+      _id: new ObjectId(uuidv4()),
+      authors: req.body.authors,
+      coverImage: req.body.coverImage,
+      description: req.body.description,
+      labels: req.body.labels,
+      reviews: [],
+      title: req.body.title
+    };
+    console.debug(newBook);
+    //TODO: add duplicate checking
+    getDb().collection<Book>("book").insertOne(newBook).then(result => {
+      if (result.insertedId === null) {
+        return res.status(400).json(errResBody);
+      }
+      const resBody: InsertedResponse = { id: result.insertedId };
+      return res.status(201).json(resBody);
+    }).catch((error) => {
+      console.error(error);
+      return res.status(500).json(errResBody);
+    });
+  } else {
+    return res.status(400).json(errResBody);
+  }
+});
+
+bookRoutes.route("/fields").get((req, res) => {
   /* 	#swagger.tags = ['Book']
       #swagger.description = 'Endpoint to get available fields of book' */
   const aggs = [
     {
       $group: {
-        _id: new ObjectId(),
+        _id: uuidv4(),
         labels: { $addToSet: "$labels" },
         authors: { $addToSet: "$authors" }
       }
@@ -43,154 +116,75 @@ bookRoutes.route("/all/fields").get(function (req, res: BookFieldResponse | Base
   const aggCursor = getDb().collection<Book>("book").aggregate<BookField>(aggs)
   const projectCursor = aggCursor.project<BookField>({ _id: 0 })
   projectCursor.toArray().then(result => {
-    return res.json({ result: true, ...result[0] });
+    const resBody: BookFieldResponse = { result: true, ...result[0] };
+    return res.json(resBody);
   }).catch((error) => {
     console.error(error);
-    return res.status(500).json({ result: false });
+    return res.status(500).json(errResBody);
   })
 })
 
-bookRoutes.route("/").get(function (req: TypedRequestQuery<Search>, res) {
-  /* 	#swagger.tags = ['Book']
-      #swagger.description = 'Endpoint to search books' */
-  let query: Filter<Book> = {};
-  if (req.query.author) {
-    query.authors = { $elemMatch: { $regex: `.*${req.query.author}.*`, $options: 'i' } };
-  }
-  if (Array.isArray(req.query.keywords)) {
-    req.query.keywords.forEach(keyword => {
-      query.$and = [
-        ...query.$and ? query.$and : [],
-        {
-          $or: [
-            { title: { $regex: `.*${keyword}.*`, $options: 'i' } },
-            { description: { $regex: `.*${keyword}.*`, $options: 'i' } }
-          ]
-        }
-      ];
-    })
-  } else if (req.query.labels) {
-    return res.status(400).json({ result: false });
-  }
-  if (Array.isArray(req.query.labels)) {
-    query.labels = { $all: req.query.labels };
-  } else if (req.query.labels) {
-    return res.status(400).json({ result: false });
-  }
-  console.debug("query:", JSON.stringify(query));
-  getDb().collection<Book>("book").find(query).toArray().then((books) => {
-    return res.json({ result: true, books: books });
-  }).catch(error => {
-    console.error(error);
-    return res.status(500).json({ result: false });
-  });
-});
-
-bookRoutes.route("/:bookId").get(function (req, res) {
+bookRoutes.route("/:bookId").get((req, res) => {
   /* 	#swagger.tags = ['Book']
       #swagger.description = 'Endpoint to get specific book by its id' */
-  let query: Filter<Book> = { _id: new ObjectId(req.params.bookId) };
-  getDb().collection<Book>("book").findOne(query).then(function (book) {
-    return res.json({ result: true, book: book });
+  const query: Filter<Book> = { _id: new ObjectId(req.params.bookId) };
+  getDb().collection<Book>("book").findOne(query).then((book) => {
+    if (book === null) {
+      return res.status(404).json(errResBody);
+    }
+    const resBody: BookResponse = { result: true, size: 1, books: [book] }
+    return res.json(resBody);
   }).catch(error => {
     console.error(error);
-    return res.status(500).json({ result: false });
+    return res.status(500).json(errResBody);
   });;
 });
 
-bookRoutes.route("/").post(function (req: express.Request<BookRequest>, res) {
+bookRoutes.route("/:bookId").delete((req, res) => {
   /* 	#swagger.tags = ['Book']
-      #swagger.description = 'Endpoint to insert a book into database' */
-  if (
-    isArrayOfString(req.body.authors)
-    && typeof req.body.coverImage === 'string'
-    && typeof req.body.description === 'string'
-    && isArrayOfString(req.body.labels)
-    && typeof req.body.title === 'string'
-  ) {
-    const newBook: Book = {
-      authors: req.body.book.authors,
-      coverImage: req.body.book.coverImage,
-      description: req.body.book.description,
-      labels: req.body.book.labels,
-      reviews: [],
-      title: req.body.book.title
-    };
-    console.debug(newBook);
-    //TODO: add duplicate checking
-    getDb().collection<Book>("book").insertOne(newBook).then(result => {
-      return result
-        ? res.status(201).json({ bookId: result.insertedId })
-        : res.status(500).json({ result: false });
-    }).catch((error) => {
-      console.error(error);
-      return res.status(500).json({ result: false });
-    });
-  }
-  else {
-    return res.status(400).json({ result: false });
-  }
-});
-
-bookRoutes.route("/:bookId").delete(function (req, res) {
-  /* 	#swagger.tags = ['Book']
-      #swagger.description = 'Endpoint to delete a book from database by its id' */
-  let query: Filter<Book> = { _id: new ObjectId(req.params.bookId) };
-  getDb().collection<Book>("book").deleteOne(query).then(function () {
+      #swagger.description = 'Endpoint to delete a book by its id' */
+  const query: Filter<Book> = { _id: new ObjectId(req.params.bookId) };
+  getDb().collection<Book>("book").deleteOne(query).then(() => {
     return res.status(204);
   }).catch(error => {
     console.error(error);
-    return res.status(500).json({ result: false });
-  });;
+    return res.status(500).json(errResBody);
+  })
 });
 
-bookRoutes.route("/:bookId/review").post(async function (req, res) {
-  /* 	#swagger.tags = ['Book', 'Review']
-      #swagger.description = 'Endpoint to delete a book from database by its id' */
-  let username;
-  if (typeof req.body.userId === 'string') {
-    let query: Filter<User> = { _id: new ObjectId(req.body.userId) };
-    getDb().collection<User>("user").findOne(query).then(function (user) {
-      username = user?.username;
-    });
-  }
+bookRoutes.route("/:bookId/review").post(async (req: TypedRequestBody<Review>, res) => {
+  /* 	#swagger.tags = ['Book']
+      #swagger.description = 'Endpoint to create a book review' */
   if (
     typeof req.body.rank === 'number'
     && req.body.rank > 0
     && req.body.rank <= 5
     && typeof req.body.content === 'string'
-    && username
-    && await hasComment(req.body.bookId, username)
+    && typeof req.body.username === 'string'
   ) {
-    const newBookReview: BookReview = {
+    if (!(await hasBookReview(req.params.bookId, req.body.username))) {
+      return res.status(409).json(errResBody);
+    }
+    const newBookReview: Review = {
       content: req.body.content,
       createTime: new Date(),
       rank: req.body.rank,
-      username: username
+      username: req.body.username
     };
     console.debug(newBookReview);
-    let bookQuery: Filter<Book> = { _id: new ObjectId(req.body.bookId) };
-    let bookUpdate: UpdateFilter<Book> = { $push: { reviews: newBookReview}};
+    const bookQuery: Filter<Book> = { _id: new ObjectId(req.params.bookId) };
+    const bookUpdate: UpdateFilter<Book> = { $push: { reviews: newBookReview } };
     getDb().collection<Book>("book").findOneAndUpdate(bookQuery, bookUpdate).then(result => {
-      return result
-        ? res.status(204)
-        : res.status(500).json({ result: false });
+      if (result.ok && result.value) {
+        const resBody: BookResponse = { result: true, size: 1, books: [result.value] };
+        return res.status(201).json(resBody);
+      }
+      return res.status(400).json(errResBody);
     }).catch((error) => {
       console.error(error);
-      return res.status(500).json({ result: false });
+      return res.status(500).json(errResBody);
     });
+  } else {
+    return res.status(400).json(errResBody);
   }
-  else {
-    return res.status(400).json({ result: false });
-  }
-})
-
-async function hasComment(bookId: string, username: string) {
-  let query: Filter<Book> = {
-    _id: new ObjectId(bookId),
-    reviews: { username: username }
-  };
-  return getDb().collection<Book>("book").findOne(query).then(function (book) {
-    return book !== null;
-  })
-}
+});

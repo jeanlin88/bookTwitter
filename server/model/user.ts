@@ -1,9 +1,14 @@
-export interface User {
+interface BaseUser {
     avatar: string
-    blockList: string[]
-    email: string
-    favoriteBookLists: string[]
-    favoriteBooks: string[]
+    email: string //unique
+    username: string //unique
+}
+
+export interface UserRequest extends BaseUser {
+    hashedPass: string
+}
+
+export interface User extends BaseUser {
+    hashedPass?: string
     registrationDate: Date
-    username: string
-};
+}

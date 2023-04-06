@@ -11,22 +11,26 @@ app.use(cors());
 app.use(express.json());
 
 //middleware
-app.use(function (req, res, next) {
+app.use((req, res, next) => {
     console.debug(req.url, req.params, req.body);
     next();
 });
-//router
+
+//routers
 app.use('/api/v1/', routerV1);
+
 //API swagger documentation
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
 //default 404 response
-app.use(function (req, res) {
+app.use((req, res) => {
     res.status(404).json({ result: false });
 })
+
 //listen
 app.listen(process.env.PORT || 5000, () => {
     // perform a database connection when server starts
-    connectToServer(function (err: Error) {
+    connectToServer((err: Error) => {
         console.error(err);
     });
 });
