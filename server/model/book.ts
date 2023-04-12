@@ -1,24 +1,31 @@
 import { Query } from "express-serve-static-core"
+import { Reviewable, Updatable } from "./general"
 import { Review } from "./review"
 
-export interface Book {
+export interface BaseBook {
   authors: string[]
   coverImage: string
   description: string
-  labels: string[]
+  labels: string[],
   title: string
-  reviews?: Review[]
 }
 
-export interface Booklist {
+export interface BookRequest extends BaseBook, Reviewable { }
+
+export interface Book extends BookRequest, Updatable { }
+
+export interface BaseBooklist {
   books: string[]
   description: string
   labels: string[]
   name: string
   public: boolean
   username: string
-  reviews: Review[]
 }
+
+export interface BooklistRequest extends BaseBooklist, Reviewable { }
+
+export interface Booklist extends BooklistRequest, Updatable { }
 
 export interface BooklistField {
   labels: string[]

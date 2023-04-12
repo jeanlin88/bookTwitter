@@ -1,11 +1,10 @@
 import express from "express";
-import { Filter, ObjectId, UpdateFilter, WithId } from "mongodb";
-import { v4 as uuidv4 } from "uuid";
+import { Filter, ObjectId, UpdateFilter } from "mongodb";
 import { getDb } from "../../db/conn";
-import { hasBooklistReview, isArrayOfString, usernameExist } from "../../helper";
-import { Booklist, BooklistField } from "../../model/book";
+import { getBooklistReview, isArrayOfString, usernameExist } from "../../helper";
+import { BooklistRequest, Booklist, BooklistField } from "../../model/book";
 import { TypedRequestBody, TypedRequestQuery } from "../../model/request";
-import { BooklistFieldResponse, BooklistResponse, errResBody, InsertedResponse } from "../../model/response";
+import { BooklistFieldResponse, BooklistResponse, errResBody, InsertedResponse, ReviewResponse } from "../../model/response";
 import { BooklistSearch } from "../../model/book";
 import { Review } from "../../model/review";
 
@@ -45,7 +44,7 @@ booklistRoutes.route("/").get((req: TypedRequestQuery<BooklistSearch>, res) => {
     });
 });
 
-booklistRoutes.route("/").post(async (req: TypedRequestBody<Booklist>, res) => {
+booklistRoutes.route("/").post(async (req: TypedRequestBody<BooklistRequest>, res) => {
     /* 	#swagger.tags = ['Booklist']
         #swagger.description = 'Endpoint to create a booklist' */
     if (
@@ -58,15 +57,15 @@ booklistRoutes.route("/").post(async (req: TypedRequestBody<Booklist>, res) => {
         && typeof req.body.username === 'string'
         && (await usernameExist(req.body.username))
     ) {
-        const newBooklist: WithId<Booklist> = {
-            _id: new ObjectId(uuidv4()),
+        const newBooklist: Booklist = {
             books: req.body.books,
             description: req.body.description,
             labels: req.body.labels,
             name: req.body.name,
             public: req.body.public,
             reviews: [],
-            username: req.body.username
+            username: req.body.username,
+            updatedAt: new Date()
         };
         console.debug(newBooklist);
         //TODO: add duplicate checking
@@ -91,7 +90,7 @@ booklistRoutes.route("/fields").get((req, res) => {
     const aggs = [
         {
             $group: {
-                _id: uuidv4(),
+                _id: new ObjectId(),
                 labels: { $addToSet: "$labels" }
             }
         },
@@ -139,7 +138,7 @@ booklistRoutes.route("/:booklistId").delete((req, res) => {
         #swagger.description = 'Endpoint to delete a booklist by its id' */
     const query: Filter<Booklist> = { _id: new ObjectId(req.params.booklistId) };
     getDb().collection<Booklist>("booklist").deleteOne(query).then(() => {
-        return res.status(204);
+        return res.status(204).send();
     }).catch(error => {
         console.error(error);
         return res.status(500).json(errResBody);
@@ -156,7 +155,7 @@ booklistRoutes.route("/:booklistId/review").post(async (req: TypedRequestBody<Re
         && typeof req.body.content === 'string'
         && typeof req.body.username === 'string'
     ) {
-        if (!(await hasBooklistReview(req.params.bookId, req.body.username))) {
+        if (await getBooklistReview(req.body.username, req.params.bookId)) {
             return res.status(409).json(errResBody);
         }
         const newBooklistReview: Review = {
@@ -170,7 +169,8 @@ booklistRoutes.route("/:booklistId/review").post(async (req: TypedRequestBody<Re
         const booklistUpdate: UpdateFilter<Booklist> = { $push: { reviews: newBooklistReview } };
         getDb().collection<Booklist>("booklist").findOneAndUpdate(booklistQuery, booklistUpdate).then(result => {
             if (result.ok && result.value) {
-                const resBody: BooklistResponse = { result: true, size: 1, booklists: [result.value] };
+                let resBody: BooklistResponse = { result: true, size: 1, booklists: [result.value] };
+                resBody.booklists[0].reviews = [newBooklistReview, ...result.value.reviews];
                 return res.status(201).json(resBody);
             }
             return res.status(400).json(errResBody);
@@ -182,3 +182,14 @@ booklistRoutes.route("/:booklistId/review").post(async (req: TypedRequestBody<Re
         return res.status(400).json(errResBody);
     }
 });
+
+booklistRoutes.route("/:booklistId/review/:username").get(async (req, res) => {
+    /*  #swagger.tags = ['Booklist']
+        #swagger.description = 'Endpoint to get booklist review of specific user' */
+    const booklist = await getBooklistReview(req.params.username, req.params.booklistId);
+    if (booklist){
+        const resBody: ReviewResponse = { result: true, size: 1, reviews: booklist.reviews }
+        return res.status(200).json(resBody);
+    }
+    return res.status(404).json(errResBody);
+})

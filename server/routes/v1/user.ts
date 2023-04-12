@@ -1,6 +1,5 @@
 import express from "express";
-import { Filter, ObjectId, WithId } from "mongodb";
-import { v4 as uuidv4 } from "uuid";
+import { Filter, ObjectId } from "mongodb";
 import { getDb } from "../../db/conn";
 import { emailExist, usernameExist } from "../../helper";
 import { TypedRequestBody } from "../../model/request";
@@ -43,13 +42,13 @@ userRoutes.route("/").post(async (req: TypedRequestBody<UserRequest>, res) => {
     ) {
       return res.status(409).json(errResBody);
     }
-    const newUser: WithId<User> = {
-      _id: new ObjectId(uuidv4()),
+    const newUser: User = {
       avatar: req.body.avatar,
       email: req.body.email,
       hashedPass: req.body.hashedPass,
       registrationDate: new Date(),
-      username: req.body.username
+      username: req.body.username,
+      updatedAt: new Date()
     };
     console.debug(newUser);
     getDb().collection<User>("user").insertOne(newUser).then(result => {
@@ -72,7 +71,7 @@ userRoutes.route("/:userId").delete((req, res) => {
       #swagger.description = 'Endpoint to delete user info by its id' */
   const query: Filter<User> = { _id: new ObjectId(req.params.userId) };
   getDb().collection<User>("user").deleteOne(query).then(() => {
-    return res.status(204);
+    return res.status(204).send();
   }).catch(error => {
     console.error(error);
     return res.status(500).json(errResBody);

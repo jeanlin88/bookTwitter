@@ -1,34 +1,36 @@
 import { Filter, ObjectId } from "mongodb"
 import { getDb } from "./db/conn"
 import { Book, Booklist } from "./model/book";
+import { Review } from "./model/review";
 import { User } from "./model/user"
 
-export async function hasBookReview(username: string, bookId: string): Promise<boolean> {
+export async function getBookReview(username: string, bookId: string) {
+    console.debug("check reviewed or not");
+    console.debug(username, bookId);
     const query: Filter<Book> = {
         _id: new ObjectId(bookId),
         reviews: { username: username }
     };
-    getDb().collection<Book>("book").findOne(query).then((book) => {
-        return book !== null;
-    }).catch(error => {
-        console.error(error);
-        return false;
-    });
-    return false;
+    console.debug("query:", query);
+    return getDb().collection<Book>("book").findOne(query)
+        .then(result => result)
+        .catch(error => {
+            console.error(error);
+            return null;
+        });
 }
 
-export async function hasBooklistReview(username: string, booklistId: string): Promise<boolean> {
+export async function getBooklistReview(username: string, booklistId: string) {
     const query: Filter<Booklist> = {
         _id: new ObjectId(booklistId),
-        reviews: { username: username }
+        'reviews.username': { username }
     };
-    getDb().collection<Booklist>("booklist").findOne(query).then((booklist) => {
-        return booklist !== null;
-    }).catch(error => {
-        console.error(error);
-        return false;
-    });
-    return false;
+    return getDb().collection<Booklist>("booklist").findOne(query)
+        .then(result => result)
+        .catch(error => {
+            console.error(error);
+            return null;
+        });
 }
 
 export function isArrayOfString(arr: any): boolean {

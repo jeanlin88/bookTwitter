@@ -1,6 +1,6 @@
 import { Response } from "express";
 import { ObjectId, WithId } from "mongodb";
-import { Book, BookField, Booklist, BooklistField } from "./book";
+import { BookRequest, BookField, BooklistRequest, BooklistField } from "./book";
 import { Review } from "./review";
 import { User } from "./user";
 
@@ -17,13 +17,13 @@ export interface InsertedResponse {
 }
 
 export interface BookResponse extends CountResponse {
-    books: WithId<Book>[]
+    books: WithId<BookRequest>[]
 }
 
 export interface BookFieldResponse extends BaseResponse, BookField { }
 
 export interface BooklistResponse extends CountResponse {
-    booklists: WithId<Booklist>[]
+    booklists: WithId<BooklistRequest>[]
 }
 
 export interface BooklistFieldResponse extends BaseResponse, BooklistField { };

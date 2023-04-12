@@ -1,3 +1,5 @@
+import { Updatable } from "./general"
+
 interface BaseUser {
     avatar: string
     email: string //unique
@@ -8,7 +10,7 @@ export interface UserRequest extends BaseUser {
     hashedPass: string
 }
 
-export interface User extends BaseUser {
+export interface User extends BaseUser, Updatable {
     hashedPass?: string
     registrationDate: Date
 }

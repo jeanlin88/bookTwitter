@@ -45,7 +45,12 @@
           {
             "name": "labels",
             "in": "query",
-            "type": "string"
+            "description": "labels this book has",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -214,6 +219,36 @@
           },
           "500": {
             "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/v1/book/{bookId}/review/{username}": {
+      "get": {
+        "tags": [
+          "Book"
+        ],
+        "description": "Endpoint to get book review of specific user",
+        "parameters": [
+          {
+            "name": "bookId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "username",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not Found"
           }
         }
       }
@@ -405,6 +440,36 @@
           },
           "500": {
             "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/v1/booklist/{booklistId}/review/{username}": {
+      "get": {
+        "tags": [
+          "Booklist"
+        ],
+        "description": "Endpoint to get booklist review of specific user",
+        "parameters": [
+          {
+            "name": "booklistId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "username",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not Found"
           }
         }
       }
